@@ -216,6 +216,12 @@ Create a list named `my_list` with the following elements:
 
 ```{r}
 # Your code here:
+numbers <- c(10, 20, 30, 40, 50)
+letters_vec <- c("a", "b", "c", "d", "e")
+df_sample <- mtcars[, c("mpg", "cyl")]
+my_list <- list(numbers = numbers, letters_vec = letters_vec, df_sample = df_sample)
+print(my_list)
+
 ```
 
 ------------------------------------------------------------------------
@@ -231,6 +237,13 @@ Using `my_list` from Exercise 1:
 
 ```{r}
 # Your code here:
+numbers_single <- my_list["numbers"]
+print(numbers_single) 
+letters_double <- my_list[["letters_vec"]]
+print(letters_double) 
+mpg_column <- my_list$df_sample$mpg
+print(mpg_column)
+
 ```
 
 ------------------------------------------------------------------------
@@ -246,6 +259,11 @@ Update `my_list` by:
 
 ```{r}
 # Your code here:
+my_list$numbers <- c(my_list$numbers, 60)
+my_list$letters_vec <- c(my_list$letters_vec, "f")
+my_list$df_sample$hp <- mtcars$hp
+print(my_list)
+
 ```
 
 ------------------------------------------------------------------------
@@ -257,6 +275,9 @@ Remove the `letters_vec` element from `my_list`.
 
 ```{r}
 # Your code here:
+my_list$letters_vec <- NULL
+# my_list <- within(my_list, rm(letters_vec))
+print(my_list)
 ```
 
 ------------------------------------------------------------------------
@@ -268,6 +289,10 @@ Use `lapply()` to compute the **length** of each element in `my_list`. Then, use
 
 ```{r}
 # Your code here:
+element_lengths <- lapply(my_list, length)
+print(element_lengths)
+element_means <- sapply(my_list, function(x) if(is.numeric(x)) mean(x) else NA)
+print(element_means)
 ```
 
 ------------------------------------------------------------------------
@@ -279,6 +304,8 @@ Convert `my_list` into a single vector with `unlist()` and assign it to `flatten
 
 ```{r}
 # Your code here:
+flattened_list <- unlist(my_list)
+print(flattened_list)
 ```
 
 ------------------------------------------------------------------------
@@ -290,6 +317,7 @@ Use `str()` to display the structure of `my_list`.
 
 ```{r}
 # Your code here:
+str(my_list)
 ```
 
 ------------------------------------------------------------------------
@@ -304,6 +332,10 @@ Create a nested list named `nested_li` with:
 
 ```{r}
 # Your code here:
+log_vec <- c(TRUE, FALSE, TRUE)
+log_list <- list(log_vec = log_vec)
+nested_li <- list(my_list = my_list, log_list = log_list)
+str(nested_li)
 ```
 
 ------------------------------------------------------------------------
@@ -315,6 +347,8 @@ From `nested_li`, access the `log_vec` vector.
 
 ```{r}
 # Your code here:
+log_vec_access <- nested_li$log_list$log_vec
+print(log_vec_access)
 ```
 
 ------------------------------------------------------------------------
@@ -329,6 +363,12 @@ Then combine `nested_li` and `additional_li` into a new list `combined_li` using
 
 ```{r}
 # Your code here:
+matrix_sample <- matrix(1:9, nrow = 3, ncol = 3)
+df_additional <- data.frame(Name = c("Alice", "Bob", "Charlie"), Age = c(25, 30, 35))
+additional_li <- list(matrix_sample, df_additional)
+combined_li <- c(nested_li, additional_li)
+print(combined_li)
+
 ```
 
 ------------------------------------------------------------------------
