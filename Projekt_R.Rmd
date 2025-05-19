@@ -1,0 +1,207 @@
+---
+title: "R_projekt"
+output: pdf_document
+authors: Paweł Socała, Wojciech Zacharski, Dawid Reszczyński
+date: "2025-05-19"
+---
+
+# 1. Introduction
+
+In this project, we will perform Exploratory Data Analysis (EDA) using the UFO sightings dataset. The dataset contains detailed reports of UFO sightings, which we will explore to uncover patterns, trends, and insights.
+
+# 2. Data Cleaning and Preparation
+
+## 2.1 Setting Up the Environment
+
+This section prepares the R environment by checking and installing required packages, loading them into the session, and setting a consistent theme for plots created with ggplot2.
+
+```{r}
+libs <- c("tidyverse", "lubridate", "scales", "skimr", "patchwork", "ggrepel")
+
+installed_libs <- libs %in% rownames(installed.packages())
+
+if (any(!installed_libs)) {
+  install.packages(libs[!installed_libs])
+}
+
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(skimr)
+library(patchwork)
+library(ggrepel)
+
+theme_set(theme_minimal(base_size = 12))
+
+```
+
+## 2.2 Load the Data
+
+We begin by loading the dataset from a local CSV file.
+
+```{r}
+ufo_raw <- read_csv("ufo_sightings.csv")
+```
+
+## 2.3 Check Data Structure and Missing Values
+
+Identify variable types, dataset dimensions, and missing or inconsistent data.
+
+```{r}
+# Check the dimensions of the dataset (rows x columns)
+dim(ufo_raw)
+
+# Display column names
+names(ufo_raw)
+
+# Check the structure: variable types and example values
+glimpse(ufo_raw)
+
+# Get summary statistics for each variable
+summary(ufo_raw)
+
+# Count missing values per column
+colSums(is.na(ufo_raw))
+```
+
+**Observations:**
+
+After inspecting the structure of the dataset, we can draw the following observations:
+
+-   The dataset consists of 96,429 rows and 12 columns.
+
+The columns cover a variety of data types:
+
+-   Character (chr): 7 columns including city, state, country_code, shape, reported_duration, summary, and day_part.
+-   Double (dbl): 1 column – duration_seconds.
+-   Logical (lgl): 1 column – has_images.
+-   Datetime (dttm): 2 columns – reported_date_time and reported_date_time_utc.
+-   Date (date): 1 column – posted_date.
+
+The data spans a wide temporal range:
+
+-   The earliest sighting is from 1925-12-29 and the most recent one from 2023-05-18.
+-   Report submission dates range from 1998-03-07 to 2023-05-19.
+
+Based on the colSums(is.na(ufo_raw)) output:
+
+-   Most columns have no missing values.
+
+However, a few columns contain missing entries, notably:
+
+-   state – 85 missing values,
+-   shape – 2,039 missing values,
+-   summary – 31 missing values,
+-   day_part – 2,563 missing values.
+
+These findings highlight the need for data cleaning, especially for variables like shape, day_part, and state, which will be handled in the next step.
+
+## 2.4 Handle Missing Observations and Errors
+
+In this step, we handle missing values that may affect the quality of our exploratory analysis. We apply simple filtering strategies to remove observations with missing values in key variables such as shape, summary, and day_part. For other columns, we preserve the missing data and decide case-by-case depending on the analysis.
+
+```{r}
+# Count missing values before filtering
+missing_shape <- sum(is.na(ufo_raw$shape))
+missing_day_part <- sum(is.na(ufo_raw$day_part))
+missing_summary <- sum(is.na(ufo_raw$summary))
+
+cat("Missing 'shape':", missing_shape, "\n")
+cat("Missing 'day_part':", missing_day_part, "\n")
+cat("Missing 'summary':", missing_summary, "\n")
+
+# Remove rows with missing shape and day_part (together)
+ufo_cleaned <- ufo_raw %>%
+  filter(!(is.na(shape) & is.na(day_part)))
+
+# Optional: remove rows with missing summary (if text analysis is planned)
+ufo_cleaned <- ufo_cleaned %>%
+  filter(!is.na(summary))
+
+# Check new number of rows
+cat("Remaining rows after filtering:", nrow(ufo_cleaned), "\n")
+
+# Optional: reset factor levels (useful if you plan to plot or model later)
+ufo_cleaned <- ufo_cleaned %>%
+  mutate(
+    shape = factor(shape),
+    day_part = factor(day_part),
+    state = factor(state),
+    country_code = factor(country_code)
+  )
+
+```
+
+**Observations**
+
+The dataset originally contained 96,429 rows. After filtering out records with missing summary and rows where both shape and day_part were missing, 96,330 rows remained. This means only 99 rows were removed (\~0.1% of the data), which is a minimal loss and unlikely to affect the overall analysis.
+
+## 2.5 Checking for duplicates
+
+```{r}
+duplicates <- sum(duplicated(ufo_cleaned))
+cat(paste("Number of fully duplicated rows:", duplicates, "\n"))
+
+# If any duplicates exist, remove them
+if (duplicates > 0) {
+  ufo_cleaned <- ufo_cleaned %>%
+    distinct()
+  cat("Duplicates were removed from the dataset.\n")
+} else {
+  cat("No duplicate rows detected.\n")
+}
+
+```
+
+## 2.6 Adjust Data Format
+
+In this step, we convert key variables to appropriate data types. This includes:
+
+-   transforming character columns like state, country_code, and shape into factors,
+-   ensuring that date and datetime columns are in proper Date or POSIXct format,
+-   and preparing categorical variables for visualizations and grouping operations.
+
+```{r}
+library(dplyr)
+library(lubridate)
+
+ufo_cleaned <- ufo_cleaned %>%
+  mutate(
+    # Convert categorical text columns to factors
+    city = as.factor(city),
+    state = as.factor(state),
+    country_code = as.factor(country_code),
+    shape = as.factor(shape),
+    day_part = as.factor(day_part),
+  )
+
+```
+
+**Observations**
+
+In this step, we successfully converted several character variables (city, state, country_code, shape, and day_part) into factors. This transformation improves memory efficiency and ensures better handling of categorical data in visualizations and modeling.
+
+The datetime-related columns (reported_date_time, reported_date_time_utc, and posted_date) were not modified, as they were already stored in appropriate formats:
+
+-   reported_date_time and reported_date_time_utc are in POSIXct format,
+-   posted_date is in Date format.
+
+## 2.7 Summary Statistics
+
+Present descriptive statistics to understand distributions, central tendencies, and variability in the data.
+
+## 2.8 Outlier Detection and Anomaly Identification
+
+Identify unusual or extreme data points that may require special handling or further investigation.
+
+## 2.9 Relationships Between Variables
+
+Explore correlations, associations, or patterns among key variables using visual tools and summary metrics.
+
+## 2.10 Hypothesis Generation
+
+Based on observed trends and distributions, suggest potential hypotheses or questions for further analysis.
+
+## 2.11 Implications for Modeling
+
+Discuss how the insights from EDA may inform future modeling strategies or feature selection.
